@@ -1,4 +1,4 @@
-# 📊 Sales Analysis Dashboard using Superstore Dataset
+# 📊 Sales Analysis Dashboard using Sale Data Dataset
 
 ![Power BI](https://img.shields.io/badge/Tool-Power%20BI-yellow)
 ![Dataset](https://img.shields.io/badge/Dataset-Superstore-blue)
