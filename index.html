@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sales Analysis Dashboard | Samir Singh | 2328117</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #1e2d44;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --glow: rgba(59,130,246,0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── UPLOAD SCREEN ─── */
+    #upload-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 2rem;
+      padding: 2rem;
+      background: radial-gradient(ellipse at 60% 30%, rgba(59,130,246,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 20% 80%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                  var(--bg);
+    }
+    .upload-header { text-align: center; }
+    .upload-header .badge {
+      display: inline-block;
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.3);
+      color: var(--accent);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .upload-header h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #e2e8f0 0%, #3b82f6 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .upload-header p {
+      color: var(--muted);
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .upload-box {
+      width: 100%;
+      max-width: 500px;
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .upload-box:hover, .upload-box.drag-over {
+      border-color: var(--accent);
+      background: rgba(59,130,246,0.06);
+      box-shadow: 0 0 40px rgba(59,130,246,0.1);
+    }
+    .upload-box input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .upload-box h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .upload-box p { color: var(--muted); font-size: 0.85rem; }
+    .upload-hint {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      max-width: 500px;
+      width: 100%;
+    }
+    .upload-hint h4 { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+    .upload-hint ol { padding-left: 1.2rem; color: var(--muted); font-size: 0.85rem; line-height: 1.8; }
+    .upload-hint a { color: var(--accent2); text-decoration: none; }
+    .upload-hint a:hover { text-decoration: underline; }
+    .upload-hint code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--surface2);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+    }
+
+    /* ─── DASHBOARD ─── */
+    #dashboard { display: none; }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
+    .logo-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100%{ opacity:1; } 50%{ opacity:0.4; }
+    }
+    .logo h2 { font-size: 1rem; font-weight: 700; }
+    .logo span { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+    .header-meta { color: var(--muted); font-size: 0.8rem; }
+    .header-meta strong { color: var(--text); }
+
+    /* Filters */
+    .filters-bar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .filter-label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+    .filter-divider { width: 1px; height: 20px; background: var(--border); }
+
+    /* KPI Cards */
+    .main { padding: 1.5rem 2rem; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.3rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--accent));
+    }
+    .kpi-card.green { --card-accent: var(--green); }
+    .kpi-card.cyan  { --card-accent: var(--accent2); }
+    .kpi-card.amber { --card-accent: var(--amber); }
+    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
+    .kpi-value { font-size: 2rem; font-weight: 700; line-height: 1; font-family: 'JetBrains Mono', monospace; }
+    .kpi-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem; }
+    .kpi-icon { position: absolute; top: 1.2rem; right: 1.3rem; font-size: 1.6rem; opacity: 0.18; }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .charts-bottom {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 1rem;
+    }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.3rem;
+    }
+    .chart-card.full-width { grid-column: 1 / -1; }
+    .chart-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chart-title::before {
+      content: '';
+      width: 4px; height: 14px;
+      background: var(--accent);
+      border-radius: 4px;
+    }
+    canvas { max-width: 100%; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0.75rem;
+    }
+    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid rgba(30,45,68,0.6); }
+    tbody tr:hover { background: rgba(59,130,246,0.04); }
+    .tag {
+      display: inline-block;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .tag.positive { background: rgba(16,185,129,0.15); color: var(--green); }
+    .tag.negative { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid, .charts-bottom { grid-template-columns: 1fr; }
+      .main { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ UPLOAD SCREEN ═══ -->
+<div id="upload-screen">
+  <div class="upload-header">
+    <div class="badge">Capstone Project · CS &amp; Sys. Engg.</div>
+    <h1>Sales Analysis<br>Dashboard</h1>
+    <p>Samir Singh &nbsp;·&nbsp; Roll No: 2328117 &nbsp;·&nbsp; Superstore Dataset</p>
+  </div>
+
+  <div class="upload-box" id="drop-zone">
+    <input type="file" id="csv-input" accept=".csv" />
+    <div class="upload-icon">📂</div>
+    <h3>Drop your Superstore CSV here</h3>
+    <p>or click to browse &nbsp;·&nbsp; accepts .csv files</p>
+  </div>
+
+  <div class="upload-hint">
+    <h4>📥 How to get the dataset</h4>
+    <ol>
+      <li>Go to <a href="https://www.kaggle.com/datasets/vivek468/superstore-dataset-final" target="_blank">kaggle.com → Superstore Dataset</a></li>
+      <li>Click the <strong>Download</strong> button (free account needed)</li>
+      <li>Unzip the file — you'll get <code>Sample - Superstore.csv</code></li>
+      <li>Drop that CSV file into the box above ↑</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard">
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <div>
+        <h2>Sales Analysis Dashboard</h2>
+        <span>Superstore Dataset &nbsp;·&nbsp; Power BI Capstone</span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <strong>Samir Singh</strong> &nbsp;|&nbsp; Roll No: <strong>2328117</strong> &nbsp;|&nbsp; CS &amp; Sys. Engg.
+    </div>
+  </header>
+
+  <div class="filters-bar">
+    <span class="filter-label">Filters</span>
+    <select id="filter-region"><option value="All">All Regions</option></select>
+    <select id="filter-category"><option value="All">All Categories</option></select>
+    <select id="filter-segment"><option value="All">All Segments</option></select>
+    <div class="filter-divider"></div>
+    <select id="filter-year"><option value="All">All Years</option></select>
+  </div>
+
+  <div class="main">
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Sales</div>
+        <div class="kpi-value" id="kpi-sales">—</div>
+        <div class="kpi-sub" id="kpi-sales-sub"></div>
+        <div class="kpi-icon">💰</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Total Profit</div>
+        <div class="kpi-value" id="kpi-profit">—</div>
+        <div class="kpi-sub" id="kpi-profit-sub"></div>
+        <div class="kpi-icon">📈</div>
+      </div>
+      <div class="kpi-card cyan">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value" id="kpi-orders">—</div>
+        <div class="kpi-sub" id="kpi-orders-sub"></div>
+        <div class="kpi-icon">📦</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Profit Margin</div>
+        <div class="kpi-value" id="kpi-margin">—</div>
+        <div class="kpi-sub" id="kpi-margin-sub"></div>
+        <div class="kpi-icon">🎯</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Monthly Sales Trend</div>
+        <canvas id="chart-monthly" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Sales by Region</div>
+        <canvas id="chart-region" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-bottom">
+      <div class="chart-card">
+        <div class="chart-title">Profit by Sub-Category</div>
+        <canvas id="chart-subcat" height="260"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Sales by Category</div>
+        <canvas id="chart-category" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- Yearly Sales Line -->
+    <div class="charts-grid" style="margin-top:1rem">
+      <div class="chart-card">
+        <div class="chart-title">Yearly Sales Growth</div>
+        <canvas id="chart-yearly" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Sales by Segment</div>
+        <canvas id="chart-segment" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Products Table -->
+    <div class="chart-card" style="margin-top:1rem">
+      <div class="chart-title">Top 10 Products by Sales</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Sales</th>
+              <th>Profit</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="top-products-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Sales Analysis Dashboard &nbsp;·&nbsp; Samir Singh (2328117) &nbsp;·&nbsp; CS &amp; System Engineering &nbsp;·&nbsp; Power BI Capstone Project
+  </footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// CHART INSTANCES (destroyed on re-render)
+// ─────────────────────────────────────────
+const charts = {};
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ─────────────────────────────────────────
+// CHART.JS DEFAULTS
+// ─────────────────────────────────────────
+Chart.defaults.color = '#64748b';
+Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+const COLORS = ['#3b82f6','#06b6d4','#10b981','#f59e0b','#8b5cf6','#ec4899','#ef4444','#14b8a6','#f97316','#6366f1'];
+
+// ─────────────────────────────────────────
+// CSV UPLOAD
+// ─────────────────────────────────────────
+let rawData = [];
+
+document.getElementById('csv-input').addEventListener('change', handleFile);
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+
+function handleFile(e) { loadFile(e.target.files[0]); }
+
+function loadFile(file) {
+  if (!file) return;
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      rawData = results.data.map(row => ({
+        ...row,
+        Sales:    parseFloat(row['Sales'])    || 0,
+        Profit:   parseFloat(row['Profit'])   || 0,
+        Quantity: parseInt(row['Quantity'])   || 0,
+        Discount: parseFloat(row['Discount']) || 0,
+        OrderDate: new Date(row['Order Date']),
+        Year:     new Date(row['Order Date']).getFullYear(),
+        Month:    new Date(row['Order Date']).getMonth(),  // 0-11
+      }));
+      populateFilters();
+      document.getElementById('upload-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      renderAll();
+    }
+  });
+}
+
+// ─────────────────────────────────────────
+// POPULATE FILTER DROPDOWNS
+// ─────────────────────────────────────────
+function populateFilters() {
+  const add = (id, values) => {
+    const sel = document.getElementById(id);
+    [...new Set(values)].sort().forEach(v => {
+      const o = document.createElement('option'); o.value = o.textContent = v; sel.appendChild(o);
+    });
+    sel.addEventListener('change', renderAll);
+  };
+  add('filter-region',   rawData.map(r => r['Region']));
+  add('filter-category', rawData.map(r => r['Category']));
+  add('filter-segment',  rawData.map(r => r['Segment']));
+  add('filter-year',     rawData.map(r => r.Year));
+}
+
+// ─────────────────────────────────────────
+// FILTER
+// ─────────────────────────────────────────
+function getFiltered() {
+  const region   = document.getElementById('filter-region').value;
+  const category = document.getElementById('filter-category').value;
+  const segment  = document.getElementById('filter-segment').value;
+  const year     = document.getElementById('filter-year').value;
+  return rawData.filter(r =>
+    (region   === 'All' || r['Region']   === region)   &&
+    (category === 'All' || r['Category'] === category) &&
+    (segment  === 'All' || r['Segment']  === segment)  &&
+    (year     === 'All' || r.Year        === +year)
+  );
+}
+
+// ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmtUSD = v => '$' + (v >= 1e6 ? (v/1e6).toFixed(2)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v.toFixed(0));
+const fmtPct = v => (v*100).toFixed(1) + '%';
+
+function groupBy(data, key, valFn) {
+  const map = {};
+  data.forEach(r => {
+    const k = r[key];
+    if (!map[k]) map[k] = 0;
+    map[k] += valFn(r);
+  });
+  return map;
+}
+
+// ─────────────────────────────────────────
+// RENDER ALL
+// ─────────────────────────────────────────
+function renderAll() {
+  const data = getFiltered();
+  renderKPIs(data);
+  renderMonthlyChart(data);
+  renderRegionChart(data);
+  renderSubCatChart(data);
+  renderCategoryChart(data);
+  renderYearlyChart(data);
+  renderSegmentChart(data);
+  renderTopProducts(data);
+}
+
+// ─────────────────────────────────────────
+// KPIs
+// ─────────────────────────────────────────
+function renderKPIs(data) {
+  const totalSales   = data.reduce((s,r) => s + r.Sales, 0);
+  const totalProfit  = data.reduce((s,r) => s + r.Profit, 0);
+  const totalOrders  = new Set(data.map(r => r['Order ID'])).size;
+  const margin       = totalSales ? totalProfit / totalSales : 0;
+  const avgOrder     = totalOrders ? totalSales / totalOrders : 0;
+
+  $('kpi-sales').textContent   = fmtUSD(totalSales);
+  $('kpi-sales-sub').textContent = `Avg Order: ${fmtUSD(avgOrder)}`;
+  $('kpi-profit').textContent  = fmtUSD(totalProfit);
+  $('kpi-profit-sub').textContent = totalProfit >= 0 ? '▲ Profitable' : '▼ Loss';
+  $('kpi-orders').textContent  = totalOrders.toLocaleString();
+  $('kpi-orders-sub').textContent = `${data.length.toLocaleString()} line items`;
+  $('kpi-margin').textContent  = fmtPct(margin);
+  $('kpi-margin-sub').textContent = margin >= 0.12 ? '✓ Good margin' : 'Below target';
+}
+
+// ─────────────────────────────────────────
+// MONTHLY SALES TREND
+// ─────────────────────────────────────────
+function renderMonthlyChart(data) {
+  destroyChart('monthly');
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const salesByMonth = new Array(12).fill(0);
+  const profitByMonth = new Array(12).fill(0);
+  data.forEach(r => {
+    salesByMonth[r.Month]  += r.Sales;
+    profitByMonth[r.Month] += r.Profit;
+  });
+  charts['monthly'] = new Chart($('chart-monthly'), {
+    type: 'line',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { label: 'Sales', data: salesByMonth, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, fill: true, pointRadius: 3 },
+        { label: 'Profit', data: profitByMonth, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', tension: 0.4, fill: true, pointRadius: 3 },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { grid: { color: '#1e2d44' }, ticks: { callback: v => fmtUSD(v) } }, x: { grid: { color: '#1e2d44' } } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// REGION BAR
+// ─────────────────────────────────────────
+function renderRegionChart(data) {
+  destroyChart('region');
+  const salesMap  = groupBy(data, 'Region', r => r.Sales);
+  const profitMap = groupBy(data, 'Region', r => r.Profit);
+  const labels = Object.keys(salesMap).sort((a,b) => salesMap[b] - salesMap[a]);
+  charts['region'] = new Chart($('chart-region'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Sales',  data: labels.map(l => salesMap[l]),  backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 6 },
+        { label: 'Profit', data: labels.map(l => profitMap[l]), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 6 },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { grid: { color: '#1e2d44' }, ticks: { callback: v => fmtUSD(v) } }, x: { grid: { color: '#1e2d44' } } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// SUB-CATEGORY PROFIT (horizontal)
+// ─────────────────────────────────────────
+function renderSubCatChart(data) {
+  destroyChart('subcat');
+  const profitMap = groupBy(data, 'Sub-Category', r => r.Profit);
+  const sorted = Object.entries(profitMap).sort((a,b) => a[1] - b[1]);
+  const labels = sorted.map(e => e[0]);
+  const values = sorted.map(e => e[1]);
+  const colors = values.map(v => v >= 0 ? 'rgba(16,185,129,0.75)' : 'rgba(239,68,68,0.75)');
+  charts['subcat'] = new Chart($('chart-subcat'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Profit', data: values, backgroundColor: colors, borderRadius: 4 }] },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#1e2d44' }, ticks: { callback: v => fmtUSD(v) } }, y: { grid: { color: '#1e2d44' }, ticks: { font: { size: 11 } } } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// CATEGORY PIE
+// ─────────────────────────────────────────
+function renderCategoryChart(data) {
+  destroyChart('category');
+  const salesMap = groupBy(data, 'Category', r => r.Sales);
+  const labels = Object.keys(salesMap);
+  charts['category'] = new Chart($('chart-category'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => salesMap[l]), backgroundColor: ['#3b82f6','#06b6d4','#10b981'], borderColor: '#111827', borderWidth: 2, hoverOffset: 8 }] },
+    options: { responsive: true, cutout: '62%', plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// YEARLY SALES
+// ─────────────────────────────────────────
+function renderYearlyChart(data) {
+  destroyChart('yearly');
+  const salesMap = groupBy(data, 'Year', r => r.Sales);
+  const profitMap = groupBy(data, 'Year', r => r.Profit);
+  const labels = Object.keys(salesMap).sort();
+  charts['yearly'] = new Chart($('chart-yearly'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Sales', data: labels.map(l => salesMap[l]), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)', tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#3b82f6' },
+        { label: 'Profit', data: labels.map(l => profitMap[l]), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.06)', tension: 0.35, fill: true, pointRadius: 5, pointBackgroundColor: '#10b981' },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { grid: { color: '#1e2d44' }, ticks: { callback: v => fmtUSD(v) } }, x: { grid: { color: '#1e2d44' } } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// SEGMENT DOUGHNUT
+// ─────────────────────────────────────────
+function renderSegmentChart(data) {
+  destroyChart('segment');
+  const salesMap = groupBy(data, 'Segment', r => r.Sales);
+  const labels = Object.keys(salesMap);
+  charts['segment'] = new Chart($('chart-segment'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(l => salesMap[l]), backgroundColor: ['#8b5cf6','#f59e0b','#ec4899'], borderColor: '#111827', borderWidth: 2, hoverOffset: 8 }] },
+    options: { responsive: true, cutout: '55%', plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+// ─────────────────────────────────────────
+// TOP 10 PRODUCTS TABLE
+// ─────────────────────────────────────────
+function renderTopProducts(data) {
+  const productMap = {};
+  data.forEach(r => {
+    const n = r['Product Name'];
+    if (!productMap[n]) productMap[n] = { name: n, category: r['Category'], sales: 0, profit: 0 };
+    productMap[n].sales  += r.Sales;
+    productMap[n].profit += r.Profit;
+  });
+  const top10 = Object.values(productMap).sort((a,b) => b.sales - a.sales).slice(0,10);
+  const tbody = $('top-products-body');
+  tbody.innerHTML = top10.map((p,i) => `
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.name}">${p.name}</td>
+      <td><span class="tag" style="background:rgba(59,130,246,0.12);color:#3b82f6">${p.category}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace">${fmtUSD(p.sales)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:${p.profit>=0?'var(--green)':'var(--red)'}">${fmtUSD(p.profit)}</td>
+      <td><span class="tag ${p.profit>=0?'positive':'negative'}">${p.profit>=0?'✓ Profit':'✗ Loss'}</span></td>
+    </tr>
+  `).join('');
+}
+</script>
+</body>
+</html>
